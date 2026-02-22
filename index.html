@@ -483,7 +483,7 @@
         <!-- Panel derecho: gráfico y alertas -->
         <div class="right-panel">
             <div class="chart-card">
-                <div class="chart-title">📈 Evolución de mermas (últimos 5 registros)</div>
+                <div class="chart-title">📊 Mermas de últimos productos</div>
                 <canvas id="mermaChart"></canvas>
             </div>
             <div class="alerts-card">
@@ -512,6 +512,9 @@
 </div>
 
 <script>
+    // ==================== PROTECCIÓN CLIC DERECHO ====================
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
     // ==================== CONFIGURACIÓN ====================
     let productos = JSON.parse(localStorage.getItem('productos')) || [];
     let chartInstance = null;
@@ -668,26 +671,26 @@
         document.getElementById('kpiAhorro').innerText = '$' + (alertas * 12).toFixed(0);
     }
 
-    // Actualizar gráfico de evolución de mermas (últimos 5)
+    // Actualizar gráfico de barras con los últimos 5 productos
     function actualizarGrafico() {
         const ctx = document.getElementById('mermaChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
 
-        const ultimos = productos.slice(0, 5).reverse(); // de más antiguo a más reciente para la línea
-        const labels = ultimos.map(p => p.nombre.substring(0, 8) + '...');
+        // Tomamos los últimos 5 productos (los más recientes) y los mostramos en orden descendente
+        const ultimos = productos.slice(0, 5).reverse();
+        const labels = ultimos.map(p => p.nombre.length > 10 ? p.nombre.substring(0, 8) + '...' : p.nombre);
         const data = ultimos.map(p => p.merma);
 
         chartInstance = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',  // <--- CAMBIADO A BARRAS
             data: {
                 labels: labels.length ? labels : ['Sin datos'],
                 datasets: [{
                     label: '% Merma',
                     data: data.length ? data : [0],
-                    borderColor: '#2a5298',
-                    backgroundColor: 'rgba(42,82,152,0.1)',
-                    tension: 0.2,
-                    fill: true
+                    backgroundColor: 'rgba(42, 82, 152, 0.7)',
+                    borderColor: '#1e3c72',
+                    borderWidth: 1
                 }]
             },
             options: {
@@ -695,6 +698,16 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Porcentaje (%)'
+                        }
+                    }
                 }
             }
         });
