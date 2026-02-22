@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>ChefCost Pro 🍳 | Calculadora de Merma Premium</title>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #d9e2ef 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .premium-container {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 48px;
+            padding: 30px;
+            box-shadow: 0 30px 60px rgba(0,20,40,0.25);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        /* Encabezado */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline;
+        }
+
+        .badge {
+            background: #ffd966;
+            color: #1e3c72;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            border: 1px solid #2a5298;
+        }
+
+        .tasa-card {
+            background: #1e3c72;
+            color: white;
+            border-radius: 60px;
+            padding: 12px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 8px 20px rgba(0,30,70,0.3);
+        }
+
+        .tasa-card label {
+            color: #ffd966;
+            font-weight: 600;
+        }
+
+        .tasa-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tasa-input-group input {
+            border: none;
+            border-radius: 40px;
+            padding: 10px 18px;
+            width: 140px;
+            font-weight: 700;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .tasa-input-group button {
+            background: #ffd966;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .tasa-input-group button:hover {
+            background: #ffe08c;
+        }
+
+        /* Dashboard de métricas */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 28px;
+            padding: 22px 18px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 25px rgba(0,30,70,0.1);
+        }
+
+        .kpi-title {
+            color: #4a5568;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #1e3c72;
+            line-height: 1.2;
+        }
+
+        .kpi-sub {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Layout principal */
+        .main-panel {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        /* Calculadora (izquierda) */
+        .calc-card {
+            background: white;
+            border-radius: 32px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+        }
+
+        .calc-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            color: #2d3748;
+            margin-bottom: 6px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 1rem;
+            background: #f8fafc;
+            transition: 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42,82,152,0.2);
+        }
+
+        .currency-selector {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 20px;
+        }
+
+        .currency-opt {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 40px;
+            border: 2px solid #e2e8f0;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .currency-opt.selected {
+            background: #2a5298;
+            color: white;
+            border-color: #1e3c72;
+        }
+
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 8px 16px rgba(42,82,152,0.3);
+        }
+
+        .btn-primary:hover {
+            background: #1e3c72;
+            transform: scale(1.02);
+        }
+
+        /* Panel derecho: gráfico y alertas */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        canvas {
+            max-height: 200px;
+            width: 100% !important;
+        }
+
+        .alerts-card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px;
+        }
+
+        .alert-item {
+            background: #fff3cd;
+            border-left: 6px solid #ffc107;
+            padding: 14px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-icon {
+            font-size: 1.8rem;
+        }
+
+        .alert-text {
+            font-weight: 500;
+            color: #856404;
+        }
+
+        /* Lista de productos guardados */
+        .history-section {
+            background: white;
+            border-radius: 32px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .product-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .product-item {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 16px;
+            border: 1px solid #edf2f7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-info h4 {
+            color: #1e3c72;
+            margin-bottom: 4px;
+        }
+
+        .product-info p {
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+
+        .product-merma {
+            background: #2a5298;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 700;
+        }
+
+        .btn-small {
+            background: none;
+            border: 1px solid #cbd5e0;
+            padding: 6px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-small:hover {
+            background: #edf2f7;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-panel {
+                grid-template-columns: 1fr;
+            }
+            .premium-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="premium-container">
+    <!-- Encabezado -->
+    <div class="header">
+        <div class="logo">
+            <h1>ChefCost Pro</h1>
+            <span class="badge">PREMIUM</span>
+        </div>
+        <div class="tasa-card">
+            <label>💵 Tasa BCV (USD/VES):</label>
+            <div class="tasa-input-group">
+                <input type="number" id="exchangeRate" step="0.01" value="60.00">
+                <button id="updateRateBtn">Actualizar</button>
+            </div>
+            <span id="rateDate" style="font-size:0.8rem; color:#a0c4ff;">Cargando...</span>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-title">📦 Productos registrados</div>
+            <div class="kpi-value" id="kpiProductos">0</div>
+            <div class="kpi-sub">en base de datos</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">🧾 Merma promedio</div>
+            <div class="kpi-value" id="kpiMermaPromedio">0%</div>
+            <div class="kpi-sub">últimos 30 días</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">⚠️ Alertas activas</div>
+            <div class="kpi-value" id="kpiAlertas">0</div>
+            <div class="kpi-sub">productos con alta merma</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">💰 Ahorro estimado</div>
+            <div class="kpi-value" id="kpiAhorro">$0</div>
+            <div class="kpi-sub">al optimizar mermas</div>
+        </div>
+    </div>
+
+    <!-- Panel principal: calculadora + gráfico -->
+    <div class="main-panel">
+        <!-- Calculadora -->
+        <div class="calc-card">
+            <div class="calc-title">🧑‍🍳 Nuevo cálculo</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Producto</label>
+                    <input type="text" id="productName" placeholder="Ej: Pollo" value="Pollo">
+                </div>
+                <div class="input-group">
+                    <label>Proveedor</label>
+                    <input type="text" id="proveedor" placeholder="Opcional" value="Distribuidora A">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Peso Bruto (kg)</label>
+                    <input type="number" id="grossWeight" step="0.001" value="1.000">
+                </div>
+                <div class="input-group">
+                    <label>Peso Neto (kg)</label>
+                    <input type="number" id="netWeight" step="0.001" value="0.600">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Precio total pagado</label>
+                    <input type="number" id="totalPrice" step="0.01" value="10.00">
+                </div>
+                <div class="input-group">
+                    <label>Moneda</label>
+                    <select id="priceCurrency">
+                        <option value="USD">USD</option>
+                        <option value="VES">VES</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="currency-selector">
+                <div id="usdOpt" class="currency-opt selected" onclick="setCurrency('USD')">💵 USD</div>
+                <div id="vesOpt" class="currency-opt" onclick="setCurrency('VES')">🇻🇪 Bs.</div>
+            </div>
+
+            <button class="btn-primary" id="guardarBtn">➕ Guardar producto</button>
+
+            <!-- Resultados instantáneos (preview) -->
+            <div style="margin-top: 20px; background: #e6f0ff; border-radius: 24px; padding: 16px;">
+                <p><strong>📊 Vista previa:</strong> Merma <span id="previewMerma">40.00</span>% | Costo neto/kg: <span id="previewCostoUSD">16.67</span> USD | <span id="previewCostoVES">1000.00</span> Bs.</p>
+            </div>
+        </div>
+
+        <!-- Panel derecho: gráfico y alertas -->
+        <div class="right-panel">
+            <div class="chart-card">
+                <div class="chart-title">📈 Evolución de mermas (últimos 5 registros)</div>
+                <canvas id="mermaChart"></canvas>
+            </div>
+            <div class="alerts-card">
+                <div class="chart-title">⚠️ Alertas inteligentes</div>
+                <div id="alertContainer">
+                    <div class="alert-item">
+                        <span class="alert-icon">🐟</span>
+                        <span class="alert-text">Pescado fresco tiene merma del 55% (supera el promedio 45%). Revisa calidad.</span>
+                    </div>
+                    <!-- Las alertas dinámicas se insertarán aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de productos -->
+    <div class="history-section">
+        <div class="history-header">
+            <h2 style="color:#1e3c72;">📋 Productos guardados</h2>
+            <button class="btn-small" id="exportarBtn">📥 Exportar reporte</button>
+        </div>
+        <div id="productListContainer" class="product-list">
+            <!-- Los productos se cargarán desde localStorage -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== CONFIGURACIÓN ====================
+    let productos = JSON.parse(localStorage.getItem('productos')) || [];
+    let chartInstance = null;
+    let selectedCurrency = 'USD';
+
+    // Elementos DOM
+    const exchangeRateInput = document.getElementById('exchangeRate');
+    const rateDateSpan = document.getElementById('rateDate');
+    const productName = document.getElementById('productName');
+    const proveedor = document.getElementById('proveedor');
+    const grossWeight = document.getElementById('grossWeight');
+    const netWeight = document.getElementById('netWeight');
+    const totalPrice = document.getElementById('totalPrice');
+    const priceCurrency = document.getElementById('priceCurrency');
+    const usdOpt = document.getElementById('usdOpt');
+    const vesOpt = document.getElementById('vesOpt');
+
+    // ==================== FUNCIONES ====================
+
+    // Obtener tasa del BCV
+    async function fetchOficialRate() {
+        try {
+            const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+            if (!response.ok) throw new Error('Error en API');
+            const data = await response.json();
+            if (data && data.promedio) {
+                exchangeRateInput.value = data.promedio.toFixed(2);
+                const fecha = new Date(data.fechaActualizacion);
+                rateDateSpan.innerText = `Actualizado: ${fecha.toLocaleString('es-VE')}`;
+            }
+        } catch (error) {
+            rateDateSpan.innerText = 'No se pudo actualizar';
+        }
+        actualizarPreview();
+    }
+
+    // Cambiar moneda selector
+    window.setCurrency = function(currency) {
+        selectedCurrency = currency;
+        if (currency === 'USD') {
+            usdOpt.classList.add('selected');
+            vesOpt.classList.remove('selected');
+            priceCurrency.value = 'USD';
+        } else {
+            vesOpt.classList.add('selected');
+            usdOpt.classList.remove('selected');
+            priceCurrency.value = 'VES';
+        }
+        actualizarPreview();
+    };
+
+    // Calcular merma y costos
+    function calcularMerma() {
+        const bruto = parseFloat(grossWeight.value) || 0;
+        const neto = parseFloat(netWeight.value) || 0;
+        const precio = parseFloat(totalPrice.value) || 0;
+        const moneda = priceCurrency.value;
+        const tasa = parseFloat(exchangeRateInput.value) || 1;
+
+        if (bruto <= 0 || neto <= 0 || precio < 0) return null;
+
+        const merma = ((bruto - neto) / bruto) * 100;
+        let precioUSD = (moneda === 'USD') ? precio : precio / tasa;
+        const costoUSD = precioUSD / neto;
+        const costoVES = costoUSD * tasa;
+
+        return { merma, costoUSD, costoVES };
+    }
+
+    // Actualizar vista previa
+    function actualizarPreview() {
+        const calc = calcularMerma();
+        if (calc) {
+            document.getElementById('previewMerma').innerText = calc.merma.toFixed(2);
+            document.getElementById('previewCostoUSD').innerText = calc.costoUSD.toFixed(2);
+            document.getElementById('previewCostoVES').innerText = calc.costoVES.toFixed(2);
+        }
+    }
+
+    // Guardar producto en localStorage
+    function guardarProducto() {
+        const calc = calcularMerma();
+        if (!calc) return alert('Verifica los pesos');
+
+        const nuevo = {
+            id: Date.now(),
+            nombre: productName.value,
+            proveedor: proveedor.value || '—',
+            bruto: parseFloat(grossWeight.value),
+            neto: parseFloat(netWeight.value),
+            precio: parseFloat(totalPrice.value),
+            moneda: priceCurrency.value,
+            merma: calc.merma,
+            costoUSD: calc.costoUSD,
+            costoVES: calc.costoVES,
+            fecha: new Date().toISOString()
+        };
+
+        productos.unshift(nuevo); // más reciente primero
+        localStorage.setItem('productos', JSON.stringify(productos));
+        actualizarListaProductos();
+        actualizarKPIs();
+        actualizarGrafico();
+        actualizarAlertas();
+
+        // Limpiar campos (opcional)
+        productName.value = '';
+        proveedor.value = '';
+        grossWeight.value = '1.000';
+        netWeight.value = '0.600';
+        totalPrice.value = '10.00';
+    }
+
+    // Renderizar lista de productos
+    function actualizarListaProductos() {
+        const container = document.getElementById('productListContainer');
+        if (productos.length === 0) {
+            container.innerHTML = '<p style="color:#888;">No hay productos guardados.</p>';
+            return;
+        }
+
+        let html = '';
+        productos.slice(0, 8).forEach(p => { // mostramos últimos 8
+            html += `
+                <div class="product-item">
+                    <div class="product-info">
+                        <h4>${p.nombre}</h4>
+                        <p>${p.proveedor} | ${new Date(p.fecha).toLocaleDateString()}</p>
+                    </div>
+                    <div class="product-merma">${p.merma.toFixed(1)}%</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // Actualizar KPIs
+    function actualizarKPIs() {
+        document.getElementById('kpiProductos').innerText = productos.length;
+
+        if (productos.length > 0) {
+            const sumaMerma = productos.reduce((acc, p) => acc + p.merma, 0);
+            const promedio = sumaMerma / productos.length;
+            document.getElementById('kpiMermaPromedio').innerText = promedio.toFixed(1) + '%';
+        } else {
+            document.getElementById('kpiMermaPromedio').innerText = '0%';
+        }
+
+        // Alertas: productos con merma > 40% (ejemplo)
+        const alertas = productos.filter(p => p.merma > 40).length;
+        document.getElementById('kpiAlertas').innerText = alertas;
+
+        // Ahorro simulado: podríamos calcular algo más complejo, aquí un placeholder
+        document.getElementById('kpiAhorro').innerText = '$' + (alertas * 12).toFixed(0);
+    }
+
+    // Actualizar gráfico de evolución de mermas (últimos 5)
+    function actualizarGrafico() {
+        const ctx = document.getElementById('mermaChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        const ultimos = productos.slice(0, 5).reverse(); // de más antiguo a más reciente para la línea
+        const labels = ultimos.map(p => p.nombre.substring(0, 8) + '...');
+        const data = ultimos.map(p => p.merma);
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length ? labels : ['Sin datos'],
+                datasets: [{
+                    label: '% Merma',
+                    data: data.length ? data : [0],
+                    borderColor: '#2a5298',
+                    backgroundColor: 'rgba(42,82,152,0.1)',
+                    tension: 0.2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // Actualizar alertas dinámicas
+    function actualizarAlertas() {
+        const container = document.getElementById('alertContainer');
+        const alertas = productos.filter(p => p.merma > 40);
+        if (alertas.length === 0) {
+            container.innerHTML = '<div style="padding:16px; color:#2e7d32;">✅ Todas las mermas están dentro de lo esperado.</div>';
+            return;
+        }
+
+        let html = '';
+        alertas.slice(0, 3).forEach(p => {
+            html += `
+                <div class="alert-item">
+                    <span class="alert-icon">⚠️</span>
+                    <span class="alert-text">${p.nombre} tiene merma del ${p.merma.toFixed(1)}% (supera el umbral 40%). Revisa calidad o proveedor.</span>
+                </div>
+            `;
+        });
+        if (alertas.length > 3) html += `<div class="alert-item">... y ${alertas.length-3} más.</div>`;
+        container.innerHTML = html;
+    }
+
+    // Exportar reporte (simulado)
+    document.getElementById('exportarBtn').addEventListener('click', () => {
+        alert('Reporte exportado (simulación). En versión real se generaría un PDF/Excel.');
+    });
+
+    // Eventos
+    document.getElementById('updateRateBtn').addEventListener('click', fetchOficialRate);
+    document.getElementById('guardarBtn').addEventListener('click', guardarProducto);
+    productName.addEventListener('input', actualizarPreview);
+    grossWeight.addEventListener('input', actualizarPreview);
+    netWeight.addEventListener('input', actualizarPreview);
+    totalPrice.addEventListener('input', actualizarPreview);
+    priceCurrency.addEventListener('change', () => {
+        setCurrency(priceCurrency.value);
+        actualizarPreview();
+    });
+    exchangeRateInput.addEventListener('input', actualizarPreview);
+
+    // Inicializar
+    window.onload = function() {
+        fetchOficialRate();
+        actualizarListaProductos();
+        actualizarKPIs();
+        actualizarGrafico();
+        actualizarAlertas();
+    };
+</script>
+</body>
+</html>
