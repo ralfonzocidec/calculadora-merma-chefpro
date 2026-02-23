@@ -6,8 +6,10 @@
     <title>ChefCost Pro 🍳 | Calculadora de Merma Premium</title>
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Librerías para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
-        /* (mantén todos los estilos exactamente igual que en la versión anterior) */
         * {
             margin: 0;
             padding: 0;
@@ -258,6 +260,22 @@
             transform: scale(1.02);
         }
 
+        /* Vista previa detallada */
+        .preview-detail {
+            margin-top: 20px;
+            background: #e6f0ff;
+            border-radius: 24px;
+            padding: 16px;
+            font-size: 0.95rem;
+        }
+        .preview-detail p {
+            margin: 6px 0;
+        }
+        .preview-detail .highlight {
+            font-weight: 700;
+            color: #1e3c72;
+        }
+
         /* Panel derecho: gráfico y alertas */
         .right-panel {
             display: flex;
@@ -327,6 +345,27 @@
             align-items: center;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            background: none;
+            border: 1px solid #cbd5e0;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .btn-small:hover {
+            background: #edf2f7;
         }
 
         .product-list {
@@ -361,19 +400,6 @@
             padding: 6px 14px;
             border-radius: 30px;
             font-weight: 700;
-        }
-
-        .btn-small {
-            background: none;
-            border: 1px solid #cbd5e0;
-            padding: 6px 12px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn-small:hover {
-            background: #edf2f7;
         }
 
         /* Responsive */
@@ -475,9 +501,14 @@
 
             <button class="btn-primary" id="guardarBtn">➕ Guardar producto</button>
 
-            <!-- Resultados instantáneos (preview) -->
-            <div style="margin-top: 20px; background: #e6f0ff; border-radius: 24px; padding: 16px;">
-                <p><strong>📊 Vista previa:</strong> Merma <span id="previewMerma">40.00</span>% | Costo neto/kg: <span id="previewCostoUSD">16.67</span> USD | <span id="previewCostoVES">1000.00</span> Bs.</p>
+            <!-- Resultados detallados (vista previa) -->
+            <div class="preview-detail">
+                <p><span class="highlight">📊 Detalles del cálculo</span></p>
+                <p>🧾 Merma: <span id="previewMerma">40.00</span>%</p>
+                <p>💸 Valor de la merma: $<span id="previewValorMermaUSD">4.00</span> USD | <span id="previewValorMermaVES">240.00</span> Bs.</p>
+                <p>💰 Costo neto por kg: $<span id="previewCostoUSD">16.67</span> USD | <span id="previewCostoVES">1000.00</span> Bs.</p>
+                <p>⚖️ Costo por gramo: $<span id="previewCostoGramoUSD">0.0167</span> USD | <span id="previewCostoGramoVES">1.00</span> Bs.</p>
+                <p>💲 Precio pagado (USD): $<span id="previewPrecioUSD">10.00</span> | (VES): <span id="previewPrecioVES">600.00</span> Bs.</p>
             </div>
         </div>
 
@@ -500,11 +531,14 @@
         </div>
     </div>
 
-    <!-- Historial de productos -->
+    <!-- Historial de productos con botones de exportación -->
     <div class="history-section">
         <div class="history-header">
             <h2 style="color:#1e3c72;">📋 Productos guardados</h2>
-            <button class="btn-small" id="exportarBtn">📥 Exportar reporte (CSV)</button>
+            <div class="button-group">
+                <button class="btn-small" id="exportarBtnCSV">📥 Exportar CSV</button>
+                <button class="btn-small" id="exportarBtnPDF">📄 Generar PDF</button>
+            </div>
         </div>
         <div id="productListContainer" class="product-list">
             <!-- Los productos se cargarán desde localStorage -->
@@ -567,7 +601,7 @@
         actualizarPreview();
     };
 
-    // Calcular merma y costos
+    // Calcular merma y todos los detalles
     function calcularMerma() {
         const bruto = parseFloat(grossWeight.value) || 0;
         const neto = parseFloat(netWeight.value) || 0;
@@ -578,20 +612,60 @@
         if (bruto <= 0 || neto <= 0 || precio < 0) return null;
 
         const merma = ((bruto - neto) / bruto) * 100;
+        
+        // Precios en ambas monedas
         let precioUSD = (moneda === 'USD') ? precio : precio / tasa;
+        let precioVES = (moneda === 'VES') ? precio : precio * tasa;
+
+        // Costos por kg neto
         const costoUSD = precioUSD / neto;
         const costoVES = costoUSD * tasa;
 
-        return { merma, costoUSD, costoVES };
+        // Costos por gramo
+        const costoGramoUSD = costoUSD / 1000;
+        const costoGramoVES = costoVES / 1000;
+
+        // Valor de la merma (lo que se pierde en dinero)
+        const valorMermaUSD = precioUSD * (merma / 100);
+        const valorMermaVES = valorMermaUSD * tasa;
+
+        return {
+            merma,
+            costoUSD,
+            costoVES,
+            costoGramoUSD,
+            costoGramoVES,
+            valorMermaUSD,
+            valorMermaVES,
+            precioUSD,
+            precioVES
+        };
     }
 
-    // Actualizar vista previa
+    // Actualizar vista previa con todos los detalles
     function actualizarPreview() {
         const calc = calcularMerma();
         if (calc) {
             document.getElementById('previewMerma').innerText = calc.merma.toFixed(2);
+            document.getElementById('previewValorMermaUSD').innerText = calc.valorMermaUSD.toFixed(2);
+            document.getElementById('previewValorMermaVES').innerText = calc.valorMermaVES.toFixed(2);
             document.getElementById('previewCostoUSD').innerText = calc.costoUSD.toFixed(2);
             document.getElementById('previewCostoVES').innerText = calc.costoVES.toFixed(2);
+            document.getElementById('previewCostoGramoUSD').innerText = calc.costoGramoUSD.toFixed(4);
+            document.getElementById('previewCostoGramoVES').innerText = calc.costoGramoVES.toFixed(2);
+            document.getElementById('previewPrecioUSD').innerText = calc.precioUSD.toFixed(2);
+            document.getElementById('previewPrecioVES').innerText = calc.precioVES.toFixed(2);
+        } else {
+            // Valores por defecto o vacíos
+            document.getElementById('previewMerma').innerText = '0.00';
+            document.getElementById('previewValorMermaUSD').innerText = '0.00';
+            document.getElementById('previewValorMermaVES').innerText = '0.00';
+            document.getElementById('previewCostoUSD').innerText = '0.00';
+            document.getElementById('previewCostoVES').innerText = '0.00';
+            document.getElementById('previewCostoGramoUSD').innerText = '0.0000';
+            document.getElementById('previewCostoGramoVES').innerText = '0.00';
+            document.getElementById('previewPrecioUSD').innerText = '0.00';
+            document.getElementById('previewPrecioVES').innerText = '0.00';
         }
     }
 
@@ -614,7 +688,7 @@
             fecha: new Date().toISOString()
         };
 
-        productos.unshift(nuevo); // más reciente primero
+        productos.unshift(nuevo);
         localStorage.setItem('productos', JSON.stringify(productos));
         actualizarListaProductos();
         actualizarKPIs();
@@ -638,7 +712,7 @@
         }
 
         let html = '';
-        productos.slice(0, 8).forEach(p => { // mostramos últimos 8
+        productos.slice(0, 8).forEach(p => {
             html += `
                 <div class="product-item">
                     <div class="product-info">
@@ -664,11 +738,8 @@
             document.getElementById('kpiMermaPromedio').innerText = '0%';
         }
 
-        // Alertas: productos con merma > 40% (ejemplo)
         const alertas = productos.filter(p => p.merma > 40).length;
         document.getElementById('kpiAlertas').innerText = alertas;
-
-        // Ahorro simulado: podríamos calcular algo más complejo, aquí un placeholder
         document.getElementById('kpiAhorro').innerText = '$' + (alertas * 12).toFixed(0);
     }
 
@@ -677,13 +748,12 @@
         const ctx = document.getElementById('mermaChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
 
-        // Tomamos los últimos 5 productos (los más recientes) y los mostramos en orden descendente
         const ultimos = productos.slice(0, 5).reverse();
         const labels = ultimos.map(p => p.nombre.length > 10 ? p.nombre.substring(0, 8) + '...' : p.nombre);
         const data = ultimos.map(p => p.merma);
 
         chartInstance = new Chart(ctx, {
-            type: 'bar',  // <--- GRÁFICO DE BARRAS
+            type: 'bar',
             data: {
                 labels: labels.length ? labels : ['Sin datos'],
                 datasets: [{
@@ -697,17 +767,12 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
                     y: {
                         beginAtZero: true,
                         max: 100,
-                        title: {
-                            display: true,
-                            text: 'Porcentaje (%)'
-                        }
+                        title: { display: true, text: 'Porcentaje (%)' }
                     }
                 }
             }
@@ -736,28 +801,18 @@
         container.innerHTML = html;
     }
 
-    // ==================== NUEVA FUNCIÓN DE EXPORTACIÓN A CSV ====================
+    // ==================== EXPORTACIÓN CSV ====================
     function exportarCSV() {
         if (productos.length === 0) {
             alert('No hay productos para exportar.');
             return;
         }
 
-        // Definir las columnas del CSV
         const columnas = [
-            'Fecha',
-            'Producto',
-            'Proveedor',
-            'Peso Bruto (kg)',
-            'Peso Neto (kg)',
-            'Merma (%)',
-            'Precio Pagado',
-            'Moneda',
-            'Costo USD/kg',
-            'Costo VES/kg'
+            'Fecha', 'Producto', 'Proveedor', 'Peso Bruto (kg)', 'Peso Neto (kg)',
+            'Merma (%)', 'Precio Pagado', 'Moneda', 'Costo USD/kg', 'Costo VES/kg'
         ];
 
-        // Crear filas de datos
         const filas = productos.map(p => [
             new Date(p.fecha).toLocaleDateString('es-VE'),
             p.nombre,
@@ -771,41 +826,89 @@
             p.costoVES.toFixed(2)
         ]);
 
-        // Crear contenido CSV (unir con comas y saltos de línea)
         let csvContent = columnas.join(',') + '\n';
-        filas.forEach(fila => {
-            csvContent += fila.join(',') + '\n';
-        });
+        filas.forEach(fila => { csvContent += fila.join(',') + '\n'; });
 
-        // Agregar un resumen al final (opcional)
-        const kpiProductos = productos.length;
-        const mermaProm = (productos.reduce((acc, p) => acc + p.merma, 0) / kpiProductos).toFixed(2);
+        const total = productos.length;
+        const mermaProm = (productos.reduce((acc, p) => acc + p.merma, 0) / total).toFixed(2);
         const alertasCount = productos.filter(p => p.merma > 40).length;
-        csvContent += '\n';
-        csvContent += 'RESUMEN,,,\n';
-        csvContent += `Total productos,${kpiProductos},,,\n`;
-        csvContent += `Merma promedio (%),${mermaProm},,,\n`;
-        csvContent += `Alertas (>40%),${alertasCount},,,\n`;
-        csvContent += `Fecha del reporte,${new Date().toLocaleString('es-VE')},,,\n`;
+        csvContent += '\nRESUMEN\n';
+        csvContent += `Total productos,${total}\n`;
+        csvContent += `Merma promedio (%),${mermaProm}\n`;
+        csvContent += `Alertas (>40%),${alertasCount}\n`;
+        csvContent += `Fecha del reporte,${new Date().toLocaleString('es-VE')}\n`;
 
-        // Crear un blob y descargarlo
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // \uFEFF para UTF-8 con BOM (acentos)
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute('download', `chefcost_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = `chefcost_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     }
 
-    // Asignar la función al botón de exportar
-    document.getElementById('exportarBtn').addEventListener('click', exportarCSV);
+    // ==================== EXPORTACIÓN PDF ====================
+    function exportarPDF() {
+        if (productos.length === 0) {
+            alert('No hay productos para generar PDF.');
+            return;
+        }
 
-    // Eventos existentes
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Título
+        doc.setFontSize(18);
+        doc.setTextColor(30, 60, 114);
+        doc.text('ChefCost Pro - Reporte de Mermas', 14, 20);
+        doc.setFontSize(11);
+        doc.setTextColor(80, 80, 80);
+        doc.text(`Fecha: ${new Date().toLocaleString('es-VE')}`, 14, 28);
+        doc.text(`Tasa BCV: ${exchangeRateInput.value} Bs./USD`, 14, 34);
+
+        // Resumen
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Resumen', 14, 45);
+        doc.setFontSize(10);
+        doc.text(`Productos registrados: ${productos.length}`, 14, 52);
+        const mermaProm = (productos.reduce((acc, p) => acc + p.merma, 0) / productos.length).toFixed(2);
+        doc.text(`Merma promedio: ${mermaProm}%`, 14, 58);
+        const alertasCount = productos.filter(p => p.merma > 40).length;
+        doc.text(`Alertas activas: ${alertasCount}`, 14, 64);
+
+        // Tabla de productos
+        const columnas = ['Producto', 'Proveedor', 'Fecha', 'Merma %', 'Costo USD/kg'];
+        const filas = productos.slice(0, 15).map(p => [
+            p.nombre,
+            p.proveedor,
+            new Date(p.fecha).toLocaleDateString('es-VE'),
+            p.merma.toFixed(2) + '%',
+            '$' + p.costoUSD.toFixed(2)
+        ]);
+
+        doc.autoTable({
+            startY: 70,
+            head: [columnas],
+            body: filas,
+            theme: 'striped',
+            headStyles: { fillColor: [42, 82, 152] },
+            styles: { fontSize: 8 }
+        });
+
+        if (productos.length > 15) {
+            const finalY = doc.lastAutoTable.finalY + 5;
+            doc.setFontSize(9);
+            doc.text(`* Mostrando 15 de ${productos.length} productos.`, 14, finalY);
+        }
+
+        doc.save(`chefcost_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+    // ==================== ASIGNAR EVENTOS ====================
     document.getElementById('updateRateBtn').addEventListener('click', fetchOficialRate);
     document.getElementById('guardarBtn').addEventListener('click', guardarProducto);
+    document.getElementById('exportarBtnCSV').addEventListener('click', exportarCSV);
+    document.getElementById('exportarBtnPDF').addEventListener('click', exportarPDF);
+
     productName.addEventListener('input', actualizarPreview);
     grossWeight.addEventListener('input', actualizarPreview);
     netWeight.addEventListener('input', actualizarPreview);
