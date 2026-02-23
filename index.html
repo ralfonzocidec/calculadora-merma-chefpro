@@ -7,6 +7,7 @@
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* (mantén todos los estilos exactamente igual que en la versión anterior) */
         * {
             margin: 0;
             padding: 0;
@@ -503,7 +504,7 @@
     <div class="history-section">
         <div class="history-header">
             <h2 style="color:#1e3c72;">📋 Productos guardados</h2>
-            <button class="btn-small" id="exportarBtn">📥 Exportar reporte</button>
+            <button class="btn-small" id="exportarBtn">📥 Exportar reporte (CSV)</button>
         </div>
         <div id="productListContainer" class="product-list">
             <!-- Los productos se cargarán desde localStorage -->
@@ -682,7 +683,7 @@
         const data = ultimos.map(p => p.merma);
 
         chartInstance = new Chart(ctx, {
-            type: 'bar',  // <--- CAMBIADO A BARRAS
+            type: 'bar',  // <--- GRÁFICO DE BARRAS
             data: {
                 labels: labels.length ? labels : ['Sin datos'],
                 datasets: [{
@@ -735,12 +736,74 @@
         container.innerHTML = html;
     }
 
-    // Exportar reporte (simulado)
-    document.getElementById('exportarBtn').addEventListener('click', () => {
-        alert('Reporte exportado (simulación). En versión real se generaría un PDF/Excel.');
-    });
+    // ==================== NUEVA FUNCIÓN DE EXPORTACIÓN A CSV ====================
+    function exportarCSV() {
+        if (productos.length === 0) {
+            alert('No hay productos para exportar.');
+            return;
+        }
 
-    // Eventos
+        // Definir las columnas del CSV
+        const columnas = [
+            'Fecha',
+            'Producto',
+            'Proveedor',
+            'Peso Bruto (kg)',
+            'Peso Neto (kg)',
+            'Merma (%)',
+            'Precio Pagado',
+            'Moneda',
+            'Costo USD/kg',
+            'Costo VES/kg'
+        ];
+
+        // Crear filas de datos
+        const filas = productos.map(p => [
+            new Date(p.fecha).toLocaleDateString('es-VE'),
+            p.nombre,
+            p.proveedor,
+            p.bruto.toFixed(3),
+            p.neto.toFixed(3),
+            p.merma.toFixed(2),
+            p.precio.toFixed(2),
+            p.moneda,
+            p.costoUSD.toFixed(2),
+            p.costoVES.toFixed(2)
+        ]);
+
+        // Crear contenido CSV (unir con comas y saltos de línea)
+        let csvContent = columnas.join(',') + '\n';
+        filas.forEach(fila => {
+            csvContent += fila.join(',') + '\n';
+        });
+
+        // Agregar un resumen al final (opcional)
+        const kpiProductos = productos.length;
+        const mermaProm = (productos.reduce((acc, p) => acc + p.merma, 0) / kpiProductos).toFixed(2);
+        const alertasCount = productos.filter(p => p.merma > 40).length;
+        csvContent += '\n';
+        csvContent += 'RESUMEN,,,\n';
+        csvContent += `Total productos,${kpiProductos},,,\n`;
+        csvContent += `Merma promedio (%),${mermaProm},,,\n`;
+        csvContent += `Alertas (>40%),${alertasCount},,,\n`;
+        csvContent += `Fecha del reporte,${new Date().toLocaleString('es-VE')},,,\n`;
+
+        // Crear un blob y descargarlo
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // \uFEFF para UTF-8 con BOM (acentos)
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', `chefcost_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // Asignar la función al botón de exportar
+    document.getElementById('exportarBtn').addEventListener('click', exportarCSV);
+
+    // Eventos existentes
     document.getElementById('updateRateBtn').addEventListener('click', fetchOficialRate);
     document.getElementById('guardarBtn').addEventListener('click', guardarProducto);
     productName.addEventListener('input', actualizarPreview);
@@ -764,4 +827,3 @@
 </script>
 </body>
 </html>
-
